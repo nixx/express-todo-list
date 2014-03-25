@@ -14,32 +14,42 @@ app.use(express.json());
 app.get('/todo', function(req, res) {
   res.format({
     json: function() {
-      res.json(todos);
+      res.json(todos.map(function(t) {
+        return {id: t.id, title: t.title, due_date: t.due_date};
+      }));
     },
     html: function() {
       res.send('<html><body><ul>' + todos.map(function(t) {
-        return '<li>' + t.id + ' : ' + t.text + ' ' + t.due_date + '</li>';
+        return '<li>' + t.id + ' : ' + t.title + ' ' + t.due_date + '</li>';
       }).join('') + '</ul></body></html>');
     }
-  }
-)});
+  });
+});
+
+app.get('/todo/:id', function(req, res) {
+  var id = parseInt(req.params.id);
+  res.format({
+    json: function() {
+      for(var i = 0; i < todos.length; i++) {
+        if(id === todos[i].id){
+          res.json(todos[i]);
+          return;
+        }
+      }
+      res.json(404, {});
+    }
+  });
+});
 
 
 app.post('/todo', function(req, res) {
   var todo;
-  var contentType = req.get('Content-Type');
-  switch(contentType) {
-    case 'application/json':
-    todo = req.body;
-    if(todo.text && todo.due_date) {
-      todos.push({id: id++, text: todo.text, due_date: todo.due_date});
-      res.send(201);
-    } else {
-      res.send(400)
-    }
-    break;
-    default:
-      res.send(406);
+  todo = req.body;
+  if(todo.title && todo.due_date && todo.description) {
+    todos.push({id: id++, title: todo.title, due_date: todo.due_date, description: todo.description});
+    res.send(201);
+  } else {
+    res.send(400)
   }
 });
 
@@ -49,9 +59,12 @@ app.put('/todo/:id', function(req, res) {
   for(var i = 0; i < todos.length; i++){
     if(todos[i].id === id) {
       todo = req.body;
-      if(todo.text && todo.due_date) {
-        todos[i] = {id: id, text: todo.text, due_date: todo.due_date}
+      if(todo.title && todo.due_date && todo.description) {
+        todos[i] = {id: id, title: todo.title, due_date: todo.due_date, description: todo.description}
         res.send(202);
+        return;
+      } else {
+        res.send(400);
         return;
       }
     }
